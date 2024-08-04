@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/CMakeFiles/bootloader
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/CMakeFiles/bootloader.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/CMakeFiles/bootloader-complete.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+D:/UNIVERSIDAD/Projects_ESP32_TDIII/Proyectos_ESPIDF/PWM-Prueba/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
