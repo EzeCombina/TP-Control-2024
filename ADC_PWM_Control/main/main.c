@@ -30,7 +30,7 @@
 #define ADC_CHANNEL         ADC1_CHANNEL_4      // Corresponde al GPIO 32
 #define ADC_ATTEN           ADC_ATTEN_DB_12     // Atenuación de 12 dB en el voltaje de entrada para usar el ADC
 #define MUESTRAS            64                  // Muestras para obtener un promedio del valor del ADC
-#define T_MOTOR             21.12
+#define T_MOTOR             19.5
 #define BITS12              4096
 
 int modo                        = ESCALON;              // Elegir que tipo de técnica se le aplica a la señal del ADC para obtener un mejor valor
@@ -51,8 +51,8 @@ float Vout_motor                = 0;
 #define LEDC_OUTPUT_IO          (5)                                     // Pin de salida del PWM 
 #define LEDC_CHANNEL            LEDC_CHANNEL_0
 #define LEDC_DUTY_RES           LEDC_TIMER_8_BIT                        // Resolución del PWM (8 bits)
-#define LEDC_DUTY_PERCENT       20                                     // Duty porcentual
-#define LEDC_DUTY               ((LEDC_DUTY_PERCENT*255)/100)            // Duty al 50%. (2 ** 8) * 50% = 128
+#define LEDC_DUTY_PERCENT       80                                      // Duty porcentual
+#define LEDC_DUTY               ((LEDC_DUTY_PERCENT*255)/100)           // Duty al 50%. (2 ** 8) * 50% = 128
 #define LEDC_FREQUENCY          (1000)                                  // Frequency in Hertz. Set frequency at 1 kHz
 
 #define PROCESADORA     0
@@ -72,7 +72,7 @@ void app_main(void)
     BaseType_t errA = xTaskCreatePinnedToCore(
         TaskADC,                     	        // Funcion de la tarea a ejecutar
         "TaskADC",   	                        // Nombre de la tarea como String amigable para el usuario
-        configMINIMAL_STACK_SIZE*2, 		    // Cantidad de stack de la tarea
+        configMINIMAL_STACK_SIZE*3, 		    // Cantidad de stack de la tarea
         NULL,                          	        // Parametros de tarea
         tskIDLE_PRIORITY+1,         	        // Prioridad de la tarea -> Queremos que este un nivel encima de IDLE
         NULL,                          		    // Puntero a la tarea creada en el sistema
@@ -143,7 +143,7 @@ void TaskADC(void *taskParmPtr)
         if(visualizar == HISTOGRAMA)
         {
             //El hstograma se actualiza cada 1 s
-            if(esp_timer_get_time() == millisAnt + 1000*1000)
+            if(esp_timer_get_time() == millisAnt + 1000*3000)
             {
                 for(int i = (1600 - 25); i < (1600 + 25); i++)
                 {
@@ -159,7 +159,7 @@ void TaskADC(void *taskParmPtr)
         else if(visualizar == GRAFICA)
         {
             //Se muestra un punto en SerialPloter cada décima de segundo
-            if(esp_timer_get_time() > millisAnt + 100*1000)
+            if(esp_timer_get_time() > millisAnt + 100*3000)
             {
                 ESP_LOGI(TAG, "Lectura Cruda: %d\n", LecturaCruda);
                 
