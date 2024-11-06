@@ -404,10 +404,12 @@
 #define PROCESADORA     0
 #define PROCESADORB     1
 
-// // PID
+// PID
 double Kp = 0.2936;
-double Ki = 3.799;
-double Kd = 0.0008684;
+// double Ki = 3.799;
+// double Kd = 0.0008684;
+double Ki = 0.0;
+double Kd = 0.0;
 double EscalaAD = 0.5859375; 
 
 // ADC
@@ -415,7 +417,8 @@ int modo                        = ESCALON;              // Elegir que tipo de tÃ
 int visualizar                  = GRAFICA;              // Forma de presentar los valores del ADC
 int LecturaCruda                = 0;                    // Lectura del ADC
 int LecturaSuavizada            = 0;                    // Valor promedio de la lectura cruda
-int LecturaFiltrada             = 0;                    // VAlor filtrado de la lectura cruda
+volatile int LecturaFiltrada    = 0;                    // VAlor filtrado de la lectura cruda
+volatile int LecturaFiltrada8   = 0;
 int Lectura                     = 0;
 double filtro                   = 0;                    // Variable para generar el filtro
 int veces[4096];                                        // Contar las cantidad de veces que aparece la misma lectura del ACD
@@ -431,13 +434,13 @@ float ADCRLM[2]                 = {0, 0};
 double T                        = 0.001;
 double A, B, C;
 double NEWDTY;
-double OLDDTY;
+double OLDDTY                   = 0;
 float MAX                       = 255;
 double K1;
 double K2;
 double K3;
 double ADC;
-int DUTY_PWM                    = 115;
+volatile int DUTY_PWM           = 0;
 
 #define TIMER_DIVIDER         80               // Divisor del reloj (80 MHz / 80 = 1 MHz)
 #define TIMER_SCALE           (1000000)        // 1 MHz (1 tick = 1 microsegundo)
@@ -532,8 +535,9 @@ void app_main() {
         }
 
         //Aumenta el nÃºmero de veces que aparece una lectura del ADC
-        veces[Lectura]++;
+        //veces[Lectura]++;
         LecturaFiltrada *= ((-0.13 * (LecturaFiltrada - 2047)) / 2048) + 1.13;
+        LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
         Vout_filtrada_corregida = (LecturaFiltrada * 3.22) / 4096;
         Vout_motor = ((LecturaFiltrada)*T_MOTOR) / BITS12;
         //vTaskDelay(pdMS_TO_TICKS(10));
@@ -569,7 +573,10 @@ void app_main() {
             
                 if(modo == ESCALON)
                 {
-                    ESP_LOGI(TAG, "Lectura Filtrada: %d\n", LecturaFiltrada);
+                    int LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
+                    ESP_LOGI(TAG, "Lectura Filtrada: %d (12 Bits)", LecturaFiltrada);
+                    ESP_LOGI(TAG, "Lectura Filtrada: %d (8 Bits)\n", LecturaFiltrada8);
+                    ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM + LecturaFiltrada8); 
                     ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM); 
                 }
                 millisAnt = esp_timer_get_time();
@@ -580,7 +587,8 @@ void app_main() {
 
         if(flag == true)
         {
-            ERRX[0] = REF - (uint8_t)LecturaFiltrada;
+            ERRX[0] = REF - LecturaFiltrada8;
+            //ESP_LOGI(TAG, "Error 0 -> %f", ERRX[0]);
             A = K1*ERRX[0];
             B = K2*ERRX[1];
             C = K3*ERRX[2];
@@ -591,10 +599,10 @@ void app_main() {
             { 
                 NEWDTY = MAX; 
             }
-            else if(NEWDTY < 0.0)
-            {
-                NEWDTY = 0.0; /* beyond saturation */
-            }
+            // else if(NEWDTY < 0.0)
+            // {
+            //     NEWDTY = 0.0; /* beyond saturation */
+            // }
 
             //ADCRLM[1] = ADC; 
             ERRX[3] = ERRX[2]; 
@@ -603,11 +611,10 @@ void app_main() {
             OLDDTY = NEWDTY; 
             DUTY_PWM = (int)NEWDTY;
 
-            //ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM); 
+            //ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM + LecturaFiltrada8); 
 
             // PWM
-            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, DUTY_PWM));
-            
+            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, DUTY_PWM + LecturaFiltrada8));
             ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
 
             flag = false;
