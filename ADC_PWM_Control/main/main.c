@@ -609,7 +609,7 @@ void app_main() {
             ERRX[2] = ERRX[1];
             ERRX[1] = ERRX[0];
             OLDDTY = NEWDTY; 
-            DUTY_PWM = (int)NEWDTY;
+            DUTY_PWM = (int)NEWDTY; // En lugar de (int) deberia ser (uint8_t) - Teniendo en cuenta esto, el else if < 0.0 deberia quedarse 
 
             //ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM + LecturaFiltrada8); 
 
