@@ -388,7 +388,7 @@
 #define ADC_CHANNEL         ADC1_CHANNEL_4      // Corresponde al GPIO 32
 #define ADC_ATTEN           ADC_ATTEN_DB_12     // Atenuación de 12 dB en el voltaje de entrada para usar el ADC
 #define MUESTRAS            64                  // Muestras para obtener un promedio del valor del ADC
-#define T_MOTOR             19.5
+#define T_MOTOR             21.0 // 19.5
 #define BITS12              4096
 
 // PWM
@@ -405,9 +405,9 @@
 #define PROCESADORB     1
 
 // PID
-double Kp = 0.2936;
-// double Ki = 3.799;
-// double Kd = 0.0008684;
+double Kp = 0.5;
+// double Ki = 13.05;
+// double Kd = 0.00133;
 double Ki = 0.0;
 double Kd = 0.0;
 double EscalaAD = 0.5859375; 
@@ -431,15 +431,17 @@ float REF                       = 128;
 float ERRX[4]                   = {0, 0, 0, 0};
 float ADCRLM[2]                 = {0, 0};
 //const double T                  = 1000/1000000;  // Periodo en milisegundos 
-double T                        = 0.001;
-double A, B, C;
-double NEWDTY;
-double OLDDTY                   = 0;
-float MAX                       = 255;
+double T                        = 0.01;
+double A                        = 0.0; 
+double B                        = 0.0; 
+double C                        = 0.0;
+int NEWDTY;
+int OLDDTY                      = 0;
+int MAX                         = 255;
 double K1;
 double K2;
 double K3;
-double ADC;
+int ADC;
 volatile int DUTY_PWM           = 0;
 
 #define TIMER_DIVIDER         80               // Divisor del reloj (80 MHz / 80 = 1 MHz)
@@ -576,7 +578,7 @@ void app_main() {
                     int LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
                     ESP_LOGI(TAG, "Lectura Filtrada: %d (12 Bits)", LecturaFiltrada);
                     ESP_LOGI(TAG, "Lectura Filtrada: %d (8 Bits)\n", LecturaFiltrada8);
-                    ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM + LecturaFiltrada8); 
+                    ESP_LOGI(TAG, "Duty + Lectura -> %d", DUTY_PWM + LecturaFiltrada8); 
                     ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM); 
                 }
                 millisAnt = esp_timer_get_time();
@@ -599,25 +601,26 @@ void app_main() {
             { 
                 NEWDTY = MAX; 
             }
-            // else if(NEWDTY < 0.0)
-            // {
-            //     NEWDTY = 0.0; /* beyond saturation */
-            // }
+            else if(NEWDTY < 0.0)
+            {
+                NEWDTY = 0.0; /* beyond saturation */
+            }
 
             //ADCRLM[1] = ADC; 
             ERRX[3] = ERRX[2]; 
             ERRX[2] = ERRX[1];
             ERRX[1] = ERRX[0];
             OLDDTY = NEWDTY; 
-            DUTY_PWM = (int)NEWDTY; // En lugar de (int) deberia ser (uint8_t) - Teniendo en cuenta esto, el else if < 0.0 deberia quedarse 
+            DUTY_PWM = NEWDTY; // En lugar de (int) deberia ser (uint8_t) - Teniendo en cuenta esto, el else if < 0.0 deberia quedarse 
 
-            //ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM + LecturaFiltrada8); 
+            //ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM); 
 
             // PWM
-            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, DUTY_PWM + LecturaFiltrada8));
+            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, DUTY_PWM));
             ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
 
             flag = false;
+
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));  // Espera 1 segundo
