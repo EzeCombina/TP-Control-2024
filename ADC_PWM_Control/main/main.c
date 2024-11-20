@@ -388,7 +388,7 @@
 #define ADC_CHANNEL         ADC1_CHANNEL_4      // Corresponde al GPIO 32
 #define ADC_ATTEN           ADC_ATTEN_DB_12     // Atenuación de 12 dB en el voltaje de entrada para usar el ADC
 #define MUESTRAS            64                  // Muestras para obtener un promedio del valor del ADC
-#define T_MOTOR             21.0 // 19.5
+#define T_MOTOR             21.5 // 19.5
 #define BITS12              4096
 
 // PWM
@@ -405,11 +405,11 @@
 #define PROCESADORB     1
 
 // PID
-double Kp = 0.5;
+double Kp = 0.7;    // 0.7 Funciona
 // double Ki = 13.05;
 // double Kd = 0.00133;
-double Ki = 0.0;
-double Kd = 0.0;
+double Ki = 3.3;      // 2.6 - 4 Funciona
+double Kd = 1.2;    // 0.15 Funciona
 double EscalaAD = 0.5859375; 
 
 // ADC
@@ -427,11 +427,11 @@ float Vout_filtrada_corregida   = 0;
 float Vout_motor                = 0;
 
 // PID 
-float REF                       = 128;
+float REF                       = 230;
 float ERRX[4]                   = {0, 0, 0, 0};
 float ADCRLM[2]                 = {0, 0};
 //const double T                  = 1000/1000000;  // Periodo en milisegundos 
-double T                        = 0.01;
+double T                        = 0.030;
 double A                        = 0.0; 
 double B                        = 0.0; 
 double C                        = 0.0;
@@ -446,7 +446,7 @@ volatile int DUTY_PWM           = 0;
 
 #define TIMER_DIVIDER         80               // Divisor del reloj (80 MHz / 80 = 1 MHz)
 #define TIMER_SCALE           (1000000)        // 1 MHz (1 tick = 1 microsegundo)
-#define TIMER_INTERVAL_SEC    0.01                // Intervalo de 1 segundo
+#define TIMER_INTERVAL_SEC    0.03                // Intervalo de 1 segundo
 
 static const char *TAG = "TIMER_EXAMPLE";
 
@@ -462,6 +462,7 @@ bool flag = false;
 void IRAM_ATTR timer_isr(void *param) {
     interrupt_count++; // Incrementa el contador cada segundo
     flag = true;
+    gpio_set_level(GPIO_NUM_4, 1);
     //ESP_LOGI(TAG, "Interrupcion");
 
     timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); // Limpia la interrupción
@@ -502,6 +503,9 @@ void app_main() {
 
     k_init();
 
+    esp_rom_gpio_pad_select_gpio(GPIO_NUM_4);
+    gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT);
+
     // Configuración del ancho de bits del ADC
     ESP_ERROR_CHECK(adc1_config_width(ADC_WIDTH));
 
@@ -534,14 +538,15 @@ void app_main() {
             LecturaCruda = adc1_get_raw(ADC_CHANNEL);    
             filtro += ((double)LecturaCruda - filtro) / (double)FILTRO;
             LecturaFiltrada = (int)filtro;
+            //LecturaFiltrada += 120;
         }
 
         //Aumenta el número de veces que aparece una lectura del ADC
         //veces[Lectura]++;
-        LecturaFiltrada *= ((-0.13 * (LecturaFiltrada - 2047)) / 2048) + 1.13;
-        LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
-        Vout_filtrada_corregida = (LecturaFiltrada * 3.22) / 4096;
-        Vout_motor = ((LecturaFiltrada)*T_MOTOR) / BITS12;
+        // LecturaFiltrada *= ((-0.13 * (LecturaFiltrada - 2047)) / 2048) + 1.13;
+        // LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
+        // Vout_filtrada_corregida = (LecturaFiltrada * 3.3) / 4096;
+        // Vout_motor = ((LecturaFiltrada)*T_MOTOR) / BITS12;
         //vTaskDelay(pdMS_TO_TICKS(10));
 
         //Visualizar el resultado de la conversión del ADC en función del modo escogido
@@ -575,11 +580,12 @@ void app_main() {
             
                 if(modo == ESCALON)
                 {
-                    int LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
+                    //int LecturaFiltrada8 = (LecturaFiltrada*255)/4096;
                     ESP_LOGI(TAG, "Lectura Filtrada: %d (12 Bits)", LecturaFiltrada);
-                    ESP_LOGI(TAG, "Lectura Filtrada: %d (8 Bits)\n", LecturaFiltrada8);
+                    ESP_LOGI(TAG, "Lectura Filtrada 8 bits: %d (8 Bits)\n", LecturaFiltrada8);
                     ESP_LOGI(TAG, "Duty + Lectura -> %d", DUTY_PWM + LecturaFiltrada8); 
                     ESP_LOGI(TAG, "Duty -> %d", DUTY_PWM); 
+                    ESP_LOGI(TAG, "Error 0 -> %f", ERRX[0]);
                 }
                 millisAnt = esp_timer_get_time();
                 ESP_LOGI(TAG, "Vout_filtrada_corregida: %.03f", Vout_filtrada_corregida);
@@ -589,6 +595,13 @@ void app_main() {
 
         if(flag == true)
         {
+            //LecturaCruda = adc1_get_raw(ADC_CHANNEL);
+            //LecturaFiltrada *= ((-0.13 * (LecturaFiltrada - 2047)) / 2048) + 1.13;
+            //LecturaFiltrada += 120;
+            LecturaFiltrada8 = ((LecturaFiltrada+150)*255)/4096;
+            Vout_filtrada_corregida = (LecturaFiltrada * 3.3) / 4096;
+            Vout_motor = ((LecturaFiltrada)*T_MOTOR) / BITS12;
+
             ERRX[0] = REF - LecturaFiltrada8;
             //ESP_LOGI(TAG, "Error 0 -> %f", ERRX[0]);
             A = K1*ERRX[0];
@@ -620,6 +633,7 @@ void app_main() {
             ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
 
             flag = false;
+            gpio_set_level(GPIO_NUM_4, 0);
 
         }
 
