@@ -541,7 +541,7 @@ void app_main() {
         // }
         if(modo == ESCALON)
         {
-            LecturaCruda = adc1_get_raw(ADC_CHANNEL);    
+            LecturaCruda = adc1_get_raw(ADC_CHANNEL);    // ---PROBAR SACAR FILTRO---
             filtro += ((double)LecturaCruda - filtro) / (double)FILTRO;
             LecturaFiltrada = (int)filtro;
 
